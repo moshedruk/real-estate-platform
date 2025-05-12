@@ -1,21 +1,29 @@
 import { useState, useEffect } from 'react'
 
+// קאש גלובלי לתוכן
+const contentCache: { [key: string]: any } = {}
+
 export function useMongoContent<T>(pageId: string, initialContent: T) {
-  const [content, setContent] = useState<T | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [content, setContent] = useState<T | null>(contentCache[pageId] || null)
+  const [isLoading, setIsLoading] = useState(!contentCache[pageId])
 
   useEffect(() => {
-    fetchContent()
+    if (!contentCache[pageId]) {
+      fetchContent()
+    }
   }, [pageId])
 
   const fetchContent = async () => {
     try {
       const response = await fetch(`/api/content?pageId=${pageId}`)
       const data = await response.json()
-      setContent(data?.content || initialContent)
+      const newContent = data?.content || initialContent
+      setContent(newContent)
+      contentCache[pageId] = newContent
     } catch (error) {
       console.error('Error fetching content:', error)
       setContent(initialContent)
+      contentCache[pageId] = initialContent
     } finally {
       setIsLoading(false)
     }
@@ -23,7 +31,10 @@ export function useMongoContent<T>(pageId: string, initialContent: T) {
 
   const setContentAndUpdate = async (newContent: T) => {
     try {
+      // עדכון מיידי של ה-UI וה-cache
       setContent(newContent)
+      contentCache[pageId] = newContent
+
       const response = await fetch(`/api/content?pageId=${pageId}`, {
         method: 'PUT',
         headers: {
@@ -38,7 +49,9 @@ export function useMongoContent<T>(pageId: string, initialContent: T) {
     } catch (error) {
       console.error('Error updating content:', error)
       // אם העדכון נכשל, נחזיר את התוכן הקודם
-      setContent(content || initialContent)
+      const previousContent = content || initialContent
+      setContent(previousContent)
+      contentCache[pageId] = previousContent
     }
   }
 
