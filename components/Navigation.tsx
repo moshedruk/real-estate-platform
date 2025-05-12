@@ -3,7 +3,8 @@
 import React from 'react'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, PencilIcon } from '@heroicons/react/24/outline'
+import { useEditMode } from '../contexts/EditModeContext'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -15,6 +16,7 @@ const navigation = [
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { isEditMode, toggleEditMode } = useEditMode()
 
   return (
     <header className="bg-white">
@@ -45,7 +47,18 @@ export default function Navigation() {
             </Link>
           ))}
         </div>
-        <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-4">
+          <button
+            onClick={toggleEditMode}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              isEditMode 
+                ? 'bg-primary text-white hover:bg-primary/90'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <PencilIcon className="h-4 w-4" />
+            <span className="opacity-0 transition-opacity animate-fade-in">{isEditMode ? 'מצב עריכה פעיל' : 'הפעל עריכה'}</span>
+          </button>
           <Link href="/contact" className="btn-primary">
             Contact Us
           </Link>
@@ -82,6 +95,16 @@ export default function Navigation() {
                     {item.name}
                   </Link>
                 ))}
+                <button
+                  onClick={toggleEditMode}
+                  className={`-mx-3 w-full text-right rounded-lg px-3 py-2 text-base font-semibold leading-7 ${
+                    isEditMode 
+                      ? 'bg-primary text-white'
+                      : 'text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {isEditMode ? 'מצב עריכה פעיל' : 'הפעל עריכה'}
+                </button>
               </div>
             </div>
           </div>

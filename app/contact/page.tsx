@@ -8,7 +8,7 @@ import emailjs from '@emailjs/browser'
 
 // Initialize EmailJS
 emailjs.init({
-  publicKey: "YOUR_PUBLIC_KEY", // Replace with your actual public key from EmailJS dashboard
+  publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY,
 });
 
 export default function Contact() {
@@ -26,8 +26,8 @@ export default function Contact() {
     
     try {
       await emailjs.send(
-        "YOUR_SERVICE_ID",
-        "YOUR_TEMPLATE_ID",
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "",
         {
           to_email: 'dmd6708713@gmail.com',
           from_name: `${formData.get('first-name')} ${formData.get('last-name')}`,
