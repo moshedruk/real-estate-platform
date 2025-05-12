@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 
-export function useMongoContent<T>(pageId: string, initialData: T) {
-  const [content, setContent] = useState<T>(initialData)
+export function useMongoContent<T>(pageId: string, initialContent: T) {
+  const [content, setContent] = useState<T | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchContent()
@@ -13,50 +12,39 @@ export function useMongoContent<T>(pageId: string, initialData: T) {
     try {
       const response = await fetch(`/api/content?pageId=${pageId}`)
       const data = await response.json()
-      if (data.content) {
-        setContent(data.content)
-      }
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching content:', err)
-      setError('Failed to fetch content')
+      setContent(data?.content || initialContent)
+    } catch (error) {
+      console.error('Error fetching content:', error)
+      setContent(initialContent)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const updateContent = async (newContent: T) => {
+  const setContentAndUpdate = async (newContent: T) => {
     try {
-      setIsLoading(true)
-      const response = await fetch('/api/content', {
-        method: 'POST',
+      setContent(newContent)
+      const response = await fetch(`/api/content?pageId=${pageId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          pageId,
-          content: newContent,
-        }),
+        body: JSON.stringify({ content: newContent }),
       })
-
+      
       if (!response.ok) {
         throw new Error('Failed to update content')
       }
-
-      setContent(newContent)
-      setError(null)
-    } catch (err) {
-      console.error('Error updating content:', err)
-      setError('Failed to update content')
-    } finally {
-      setIsLoading(false)
+    } catch (error) {
+      console.error('Error updating content:', error)
+      // אם העדכון נכשל, נחזיר את התוכן הקודם
+      setContent(content || initialContent)
     }
   }
 
   return {
-    content,
-    setContent: updateContent,
+    content: content || initialContent,
+    setContent: setContentAndUpdate,
     isLoading,
-    error,
   }
 } 

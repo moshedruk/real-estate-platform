@@ -1,44 +1,55 @@
 import { NextResponse } from 'next/server'
-import dbConnect from '@/lib/mongodb'
+import dbConnect, { updateInitDbFile } from '@/lib/mongodb'
 import Content from '@/models/Content'
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const pageId = searchParams.get('pageId')
-
-  if (!pageId) {
-    return NextResponse.json({ error: 'Page ID is required' }, { status: 400 })
-  }
-
   try {
     await dbConnect()
+    const { searchParams } = new URL(request.url)
+    const pageId = searchParams.get('pageId')
+    
+    if (!pageId) {
+      return NextResponse.json({ error: 'Page ID is required' }, { status: 400 })
+    }
+
     const content = await Content.findOne({ pageId })
-    return NextResponse.json(content || { pageId, content: {} })
+    return NextResponse.json(content || {})
   } catch (error) {
-    console.error('Database Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch content' }, { status: 500 })
+    console.error('Error fetching content:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
 
-export async function POST(request: Request) {
+export async function PUT(request: Request) {
   try {
-    const body = await request.json()
-    const { pageId, content } = body
-
-    if (!pageId || !content) {
-      return NextResponse.json({ error: 'Page ID and content are required' }, { status: 400 })
+    await dbConnect()
+    const { searchParams } = new URL(request.url)
+    const pageId = searchParams.get('pageId')
+    
+    if (!pageId) {
+      return NextResponse.json({ error: 'Page ID is required' }, { status: 400 })
     }
 
-    await dbConnect()
-    const result = await Content.findOneAndUpdate(
+    const body = await request.json()
+    const { content } = body
+
+    if (!content) {
+      return NextResponse.json({ error: 'Content is required' }, { status: 400 })
+    }
+
+    // עדכון במסד הנתונים
+    const updatedContent = await Content.findOneAndUpdate(
       { pageId },
       { content },
-      { new: true, upsert: true }
+      { upsert: true, new: true }
     )
 
-    return NextResponse.json(result)
+    // עדכון קובץ האתחול
+    await updateInitDbFile(pageId, content)
+
+    return NextResponse.json(updatedContent)
   } catch (error) {
-    console.error('Database Error:', error)
-    return NextResponse.json({ error: 'Failed to update content' }, { status: 500 })
+    console.error('Error updating content:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 } 
